@@ -1,4 +1,4 @@
-package com.example;
+package com.example.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

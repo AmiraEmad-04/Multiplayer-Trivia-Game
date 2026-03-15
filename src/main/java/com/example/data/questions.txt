@@ -1,0 +1,57 @@
+What is the capital of France?|Geography|Easy|Berlin,Paris,Madrid,Rome|B
+What is the capital of Egypt?|Geography|Easy|Cairo,Giza,Alexandria,Luxor|A
+Which continent is Egypt in?|Geography|Easy|Asia,Africa,Europe,Australia|B
+What is the capital of Italy?|Geography|Easy|Rome,Milan,Naples,Venice|A
+What is the capital of Japan?|Geography|Easy|Beijing,Tokyo,Seoul,Bangkok|B
+What is the capital of Germany?|Geography|Easy|Berlin,Hamburg,Frankfurt,Munich|A
+What is the capital of Canada?|Geography|Medium|Toronto,Ottawa,Vancouver,Montreal|B
+Which river is the longest in the world?|Geography|Medium|Amazon,Nile,Mississippi,Yangtze|B
+Which desert is the largest?|Geography|Medium|Sahara,Gobi,Kalahari,Arabian|A
+Which country has the largest population?|Geography|Medium|USA,India,China,Russia|C
+Which country has the most islands?|Geography|Hard|Indonesia,Sweden,Philippines,Japan|B
+Which is the smallest country in the world?|Geography|Hard|Monaco,Vatican City,San Marino,Liechtenstein|B
+Mount Everest lies on the border of which two countries?|Geography|Hard|India & China,Nepal & China,Nepal & India,China & Bhutan|B
+Which ocean is the deepest?|Geography|Hard|Atlantic,Pacific,Indian,Arctic|B
+
+What is 2+2?|Math|Easy|3,4,5,6|B
+What is 5+7?|Math|Easy|10,11,12,13|C
+What is 10*6?|Math|Easy|50,60,70,80|B
+What is 9^2?|Math|Medium|18,72,81,99|C
+What is the square root of 64?|Math|Easy|6,7,8,9|C
+What is 15*3?|Math|Easy|30,45,60,75|B
+What is 100/4?|Math|Easy|20,25,30,40|B
+What is the value of pi approximately?|Math|Medium|2.14,3.14,4.14,5.14|B
+What is 12*12?|Math|Medium|124,132,144,156|C
+What is the derivative of x^2?|Math|Hard|x,2x,x^2,2|B
+What is the integral of 1/x dx?|Math|Hard|ln(x),x^2,x,x/2|A
+What is the determinant of matrix [[1,2],[3,4]]?|Math|Hard|2,-2,5,-5|B
+Solve: 2^5?|Math|Medium|16,24,32,64|C
+What is the limit of sin(x)/x as x approaches 0?|Math|Hard|0,1,Infinity,Undefined|B
+
+Which planet is known as the Red Planet?|Science|Easy|Earth,Mars,Jupiter,Saturn|B
+Which planet is the largest?|Science|Easy|Earth,Mars,Jupiter,Venus|C
+What gas do humans breathe?|Science|Easy|Oxygen,Nitrogen,Carbon Dioxide,Hydrogen|A
+What gas do plants absorb?|Science|Medium|Oxygen,Carbon Dioxide,Nitrogen,Hydrogen|B
+What is H2O?|Science|Easy|Salt,Water,Hydrogen,Oxygen|B
+What is the chemical symbol of gold?|Science|Medium|Ag,Au,Gd,Go|B
+What is the speed of light?|Science|Hard|300,000 km/s,150,000 km/s,1,000 km/s,3,000 km/s|A
+Who developed the theory of relativity?|Science|Medium|Newton,Einstein,Tesla,Edison|B
+What is the hardest natural substance?|Science|Medium|Iron,Diamond,Gold,Silver|B
+What is the powerhouse of the cell?|Science|Medium|Nucleus,Ribosome,Mitochondria,Chloroplast|C
+Which particle has negative charge?|Science|Easy|Proton,Electron,Neutron,Atom|B
+What is the atomic number of Hydrogen?|Science|Easy|1,2,3,4|A
+Which law states F = ma?|Science|Medium|Newton's First Law,Newton's Second Law,Newton's Third Law,Hooke's Law|B
+What is the acceleration due to gravity on Earth?|Science|Hard|9.8 m/s²,8.9 m/s²,7.5 m/s²,6.2 m/s²|A
+
+Who invented Java?|Computer|Medium|Bill Gates,James Gosling,Steve Jobs,Mark Zuckerberg|B
+What does CPU stand for?|Computer|Easy|Central Processing Unit,Computer Personal Unit,Central Power Unit,Control Processing Unit|A
+Which language is used for Android development?|Computer|Easy|Java,Python,C++,Swift|A
+Which data structure uses FIFO?|Computer|Medium|Stack,Queue,Tree,Graph|B
+Which data structure uses LIFO?|Computer|Medium|Queue,Stack,Array,List|B
+What is the time complexity of binary search?|Computer|Hard|O(n),O(log n),O(n^2),O(1)|B
+What does RAM stand for?|Computer|Easy|Random Access Memory,Read Access Memory,Run Access Memory,Real Access Memory|A
+Which protocol is used for web pages?|Computer|Easy|FTP,HTTP,SMTP,TCP|B
+What does OOP stand for?|Computer|Easy|Object Oriented Programming,Open Operation Programming,Object Oriented Process,Open Object Programming|A
+Which sorting algorithm has average complexity O(n log n)?|Computer|Hard|Bubble Sort,Quick Sort,Selection Sort,Insertion Sort|B
+What is a primary key in databases?|Computer|Medium|Unique identifier,Foreign key,Duplicate key,Random key|A
+Which company developed Java?|Computer|Medium|Sun Microsystems,Microsoft,Apple,IBM|A

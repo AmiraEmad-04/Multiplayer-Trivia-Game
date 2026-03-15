@@ -1,0 +1,6 @@
+minPlayers=2
+maxPlayers=4
+questionTime=15
+maxQuestions=5
+publicRoomMinPlayers=2
+publicRoomMaxPlayers=4

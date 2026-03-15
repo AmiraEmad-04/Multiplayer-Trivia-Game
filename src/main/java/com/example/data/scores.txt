@@ -1,0 +1,10 @@
+basmala:10,20,15
+amira:5,12
+raghad:8,9
+mona:20,25
+soha:6,7
+omar:10
+nour:12,18
+youssef:15,16
+laila:3,6
+hassan:11

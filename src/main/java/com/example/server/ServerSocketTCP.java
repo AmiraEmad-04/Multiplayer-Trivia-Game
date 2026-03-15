@@ -1,12 +1,11 @@
-package com.example;
+package com.example.server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
 import java.net.ServerSocket;
-import java.util.List;
 
-public class ServerSocketTCP extends MessageService implements Runnable {
+public class ServerSocketTCP extends GameService implements Runnable {
 
     private final Socket socket;
 
