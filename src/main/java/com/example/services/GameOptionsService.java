@@ -14,6 +14,7 @@ public class GameOptionsService {
         String username = scanner.nextLine();
         User currentUser = new User(username);
         boolean flag = true;
+        System.out.print("Welcome to our game " + currentUser.getUsername() + "\n");
 
         while (flag) {
             System.out.println("\n-----GAME MENU-----");

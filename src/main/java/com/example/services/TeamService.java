@@ -27,7 +27,7 @@ public class TeamService {
         Team team = new Team(name);
         team.addPlayer(user);
         teams.add(team);
-        System.out.println("Team is created successfully :)");
+        System.out.println(team.getName() + " is created successfully :)");
     }
 
     public void joinTeam(User user) {
