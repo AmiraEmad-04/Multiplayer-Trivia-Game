@@ -8,59 +8,91 @@ import java.util.Scanner;
 public class ClientSocket {
 
     public static void main(String[] args) {
-        try {
-            Socket socket = new Socket("127.0.0.1", 6660);
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-            Scanner scanner = new Scanner(System.in);
-            String msg = "";
-            do {
-                System.out.println("Enter your name: ");
-                String myName = scanner.nextLine();
-                dataOutputStream.writeUTF(myName);
-                dataOutputStream.flush();
-                System.out.println("Quit(0)?");
-                msg = scanner.nextLine();
-                dataOutputStream.writeUTF(msg);
-                dataOutputStream.flush();
-//
-//                if (msg.equals("1")) {
-//                    System.out.println("Enter to whom you want to send: ");
-//                    String receiverName = scanner.nextLine();
-//                    dataOutputStream.writeUTF(receiverName);
-//                    dataOutputStream.flush();
-//
-//                    System.out.println("Enter your message: ");
-//                    String message = scanner.nextLine();
-//                    dataOutputStream.writeUTF(message);
-//                    dataOutputStream.flush();
-//
-//                    String response = dataInputStream.readUTF();
-//                    if (response.equals("MAX")) {
-//                        System.out.println("Inbox of " + receiverName + " is full, message not saved");
-//                    } else {
-//                        System.out.println("Message sent successfully");
-//                    }
-//
-//                } else if (msg.equals("2")) {
-//                    String response = dataInputStream.readUTF();
-//                    while (!response.equals("No messages found") && !response.equals("DONE")) {
-//                        System.out.println("You got a message: " + response);
-//                        response = dataInputStream.readUTF();
-//                    }
-//                    if (response.equals("No messages found")) {
-//                        System.out.println("No messages found");
-//                    }
-//                }
 
-            } while (!msg.equals("0"));
+        try {
+
+            Socket socket = new Socket("127.0.0.1", 6660);
+
+            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            DataInputStream  dataInputStream  = new DataInputStream(socket.getInputStream());
+
+            Scanner scanner = new Scanner(System.in);
+
+            String serverQuestion = dataInputStream.readUTF();
+            System.out.println(serverQuestion);
+
+            String clientName = scanner.nextLine();
+            dataOutputStream.writeUTF(clientName);
+            dataOutputStream.flush();
+
+
+            boolean setupDone = false;
+
+            while (!setupDone) {
+
+                String serverMsg = dataInputStream.readUTF();
+
+
+                if (serverMsg.equals("start")) {
+                    setupDone = true;
+                    break;
+                }
+
+
+                System.out.println(serverMsg);
+
+
+                if (serverMsg.contains("1 - Single") || serverMsg.contains("Number of players")) {
+
+                    String input = scanner.nextLine();
+                    dataOutputStream.writeUTF(input);
+                    dataOutputStream.flush();
+                }
+            }
+
+            System.out.println("Game starting. Use A B C D to answer.");
+
+
+            Thread readerThread = new Thread(() -> {
+
+                try {
+
+                    while (true) {
+
+                        String msg = dataInputStream.readUTF();
+                        System.out.println(msg);
+                    }
+
+                } catch (Exception e) {
+
+                    System.out.println("Server closed");
+                }
+            });
+
+            readerThread.start();
+
+
+            while (true) {
+
+                String input = scanner.nextLine();
+
+                dataOutputStream.writeUTF(input);
+                dataOutputStream.flush();
+
+
+                if (input.equals("-")) {
+                    break;
+                }
+            }
+
             scanner.close();
             dataOutputStream.close();
             dataInputStream.close();
             socket.close();
 
         } catch (Exception e) {
-            System.out.println(e);
+
+            System.out.println("Connection error");
         }
     }
 }
