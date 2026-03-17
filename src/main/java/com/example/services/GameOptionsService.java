@@ -9,7 +9,9 @@ public class GameOptionsService {
     static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        TeamService service = new TeamService();
+        TeamService teamService = new TeamService();
+        RoomService roomService = new RoomService();
+        RandomTriviaService randomTrivia = new RandomTriviaService();
         System.out.print("Enter username (dummy login): ");
         String username = scanner.nextLine();
         User currentUser = new User(username);
@@ -34,14 +36,16 @@ public class GameOptionsService {
                 }
                 case 2:{
                     System.out.println("Starting Multiplayer game->");
-                    service.teamMenu(currentUser);
+                    teamService.teamMenu(currentUser);
                     break;
                 }
                 case 3:{
                     System.out.println("Joining public room->");
+                    //roomService.joinRandomRoom(currentUser);
                     break;
                 }
                 case 4:{
+                    //randomTrivia.startRandomGame();
                     System.out.println("Starting random trivia->");
                     break;
                 }
