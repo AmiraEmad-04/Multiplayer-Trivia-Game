@@ -1,0 +1,126 @@
+====================================================
+  MULTIPLAYER TRIVIA GAME - HOW TO RUN
+====================================================
+
+STEP-BY-STEP:
+----------------------------------------
+
+You need to open THREE separate terminal windows.
+
+--- TERMINAL 1: Start the Lookup Server ---
+
+  cd <project root>
+  javac -d target/classes src/main/java/com/example/server/LookupServer.java \
+        src/main/java/com/example/data/Question.java
+
+  java -cp target/classes com.example.server.LookupServer
+
+  Expected output:
+    [LookupServer] Loaded XX questions.
+    [LookupServer] Started on port 6661
+
+  Keep this terminal open. The lookup server must stay running.
+
+
+--- TERMINAL 2: Start the Game Server ---
+
+  Wait until the LookupServer is running (see Terminal 1 output), then:
+
+  cd <project root>
+  javac -d target/classes -cp target/classes \
+        src/main/java/com/example/server/ServerSocketTCP.java \
+        src/main/java/com/example/server/AuthService.java \
+        src/main/java/com/example/server/Game.java \
+        src/main/java/com/example/server/GameLoop.java \
+        src/main/java/com/example/server/GameService.java \
+        src/main/java/com/example/services/GameOptionsService.java \
+        src/main/java/com/example/services/TeamService.java \
+        src/main/java/com/example/services/RoomService.java \
+        src/main/java/com/example/services/RandomTriviaService.java \
+        src/main/java/com/example/objects/User.java \
+        src/main/java/com/example/objects/Team.java \
+        src/main/java/com/example/objects/Room.java \
+        src/main/java/com/example/data/Question.java
+
+  java -cp target/classes com.example.server.ServerSocketTCP
+
+  Expected output:
+    [AuthService] Loaded XX users.
+    [AuthService] Config loaded.
+    Questions fetched from LookupServer: XX
+    Server Started
+
+  Keep this terminal open. The game server must stay running.
+
+
+--- TERMINAL 3 (and more): Start a Client ---
+
+  Wait until the Game Server is running (see Terminal 2 output), then:
+
+  cd <project root>
+  javac -d target/classes src/main/java/com/example/client/ClientSocket.java
+
+  java -cp target/classes com.example.client.ClientSocket
+
+  For multiplayer, open additional terminals and run the same client command.
+  Each terminal is one player.
+
+  Expected first output from client:
+    Welcome
+    1 - Login
+    2 - Register
+    - - Quit
+
+Or run them from the run button in the IDE
+
+USING MAVEN (RECOMMENDED - compiles everything at once)
+-------------------------------------------------------
+If Maven is installed:
+
+  cd <project root>
+  mvn compile
+
+  Then run each component in a separate terminal:
+    Terminal 1:  mvn exec:java -Dexec.mainClass="com.example.server.LookupServer"
+    Terminal 2:  mvn exec:java -Dexec.mainClass="com.example.server.ServerSocketTCP"
+    Terminal 3+: mvn exec:java -Dexec.mainClass="com.example.client.ClientSocket"
+
+
+PORTS USED
+----------
+  6660 - Game Server  (ServerSocketTCP)
+  6661 - Lookup Server (LookupServer)
+
+Make sure these ports are free before starting.
+
+
+EXISTING TEST ACCOUNTS
+----------------------
+  Username    Password
+  --------    --------
+  basmala     1234
+  amira       5678
+  raghad      1111
+  mona        9999
+  soha        abcd
+  omar        pass1
+  nour        pass2
+  youssef     pass3
+  laila       pass4
+  hassan      pass5
+  admin       admin123   (admin panel access)
+  roaa        2001
+
+
+GAME MENU OPTIONS
+-----------------
+  1. Single Player   - Play alone, choose category/difficulty/questions
+  2. Multiplayer     - Create or join a team, play against another team
+  3. Public Room     - Join a public room with random players
+  4. Random Trivia   - Random questions, random category and difficulty
+  5. Quit            - Exit the game
+
+  Enter '-' at any time to quit.
+  Answer questions using A, B, C, or D (case insensitive).
+
+====================================================

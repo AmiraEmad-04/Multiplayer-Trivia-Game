@@ -8,3 +8,6 @@ nour,pass2
 youssef,pass3
 laila,pass4
 hassan,pass5
+admin,admin123
+roaa,2001
+bosy,bosy

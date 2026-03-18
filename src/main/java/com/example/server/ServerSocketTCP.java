@@ -1,64 +1,52 @@
 package com.example.server;
 
+import com.example.data.Question;
+import com.example.objects.Game;
+import com.example.objects.User;
+import com.example.services.AuthService;
+import com.example.services.GameOptionsService;
+import com.example.services.GameService;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.Socket;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Scanner;
-import java.io.File;
-
-import com.example.data.Question;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerSocketTCP extends GameService implements Runnable {
 
     private final Socket socket;
-    private Game game;
-    private int myIndex;
     private String clientName;
 
-    static ArrayList<Question> allQuestions = new ArrayList<>();
-    static Game currentGame = null;
+    public static ArrayList<Question> allQuestions = new ArrayList<>();
+    public static Game currentGame = null;
+    public static int questionTime = 15;
+    public static int maxQuestions = 5;
 
-    static int minPlayers    = 2;
-    static int maxPlayers    = 4;
-    static int questionTime  = 15;
-    static int maxQuestions  = 5;
-
-    static boolean gameStarted = false;
+    private static final AtomicInteger connectedPlayers = new AtomicInteger(0);
 
     public ServerSocketTCP(Socket socket) {
         this.socket = socket;
     }
 
     public static void main(String[] args) {
-
-        loadConfig();
-        loadQuestions();
-
-        ArrayList<Question> gameQuestions = pickRandomQuestions(maxQuestions);
-        currentGame = new Game(gameQuestions, maxPlayers);
+        AuthService.loadUsers();
+        AuthService.loadConfig();
+        // fetch all questions from LookupServer (null = no filter = get everything)
+        allQuestions = AuthService.fetchQuestionsFromLookup("null", "null", 9999);
+        System.out.println("Questions fetched from LookupServer: " + allQuestions.size());
+        currentGame = null;
 
         try {
-
             ServerSocket serverSocket = new ServerSocket(6660);
-
-            System.out.println("Server started");
-            System.out.println("Players needed: " + minPlayers + " to " + maxPlayers);
+            System.out.println("Server Started");
 
             while (true) {
-
                 Socket socket = serverSocket.accept();
-
                 System.out.println("Client connected");
-
-                ServerSocketTCP serverSocketTCP = new ServerSocketTCP(socket);
-
-                Thread thread = new Thread(serverSocketTCP);
-                thread.start();
+                new Thread(new ServerSocketTCP(socket)).start();
             }
-
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -66,237 +54,217 @@ public class ServerSocketTCP extends GameService implements Runnable {
 
     @Override
     public void run() {
+        DataInputStream  in  = null;
+        DataOutputStream out = null;
 
         try {
+            in  = new DataInputStream(socket.getInputStream());
+            out = new DataOutputStream(socket.getOutputStream());
 
-            DataInputStream dataInputStream   = new DataInputStream(socket.getInputStream());
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            connectedPlayers.incrementAndGet();
 
-            dataOutputStream.writeUTF("Enter your name");
+            User loggedInUser = handleAuthentication(in, out);
 
-            // FIX: assign directly to clientName (the class field)
-            // not a new local variable, so this.clientName is set correctly
-            clientName = dataInputStream.readUTF();
+            if (loggedInUser == null) {
+                out.writeUTF("Goodbye!");
+                out.flush();
+                connectedPlayers.decrementAndGet();
+                return;
+            }
+
+            clientName = loggedInUser.getUsername();
+            loggedInUser.setStream(out);
             System.out.println(clientName + " joined");
 
-            // FIX: now clientName is set before addPlayer, so name is saved correctly
-            myIndex = currentGame.addPlayer(clientName, dataOutputStream);
-
-            // ---- first player is the host: they choose the game mode ----
-            if (myIndex == 0) {
-
-                dataOutputStream.writeUTF("Welcome " + clientName + "\n1 - Single\n2 - Multiplayer");
-                dataOutputStream.flush();
-
-                String choice = dataInputStream.readUTF().trim();
-
-                if (choice.equals("1")) {
-
-                    // single player: set minPlayers to 1 so game starts alone
-                    minPlayers = 1;
-                    dataOutputStream.writeUTF("Single player mode");
-                    dataOutputStream.flush();
-
-                } else {
-
-                    // multiplayer: ask how many players
-                    dataOutputStream.writeUTF("Number of players (2-" + maxPlayers + ")");
-                    dataOutputStream.flush();
-
-                    String numInput = dataInputStream.readUTF().trim();
-
-                    try {
-
-                        int chosenPlayers = Integer.parseInt(numInput);
-
-                        if (chosenPlayers < 2 || chosenPlayers > maxPlayers) {
-
-                            dataOutputStream.writeUTF("Invalid number. Using " + minPlayers);
-                            dataOutputStream.flush();
-
-                        } else {
-
-                            minPlayers = chosenPlayers;
-                            dataOutputStream.writeUTF("Waiting for " + minPlayers + " players");
-                            dataOutputStream.flush();
-                        }
-
-                    } catch (Exception e) {
-
-                        dataOutputStream.writeUTF("Invalid input. Using " + minPlayers);
-                        dataOutputStream.flush();
-                    }
-                }
-
+            if (AuthService.isAdmin(clientName)) {
+                handleAdminSession(in, out);
             } else {
-
-                // FIX: merged into one message so client only reads once
-                dataOutputStream.writeUTF("Welcome " + clientName + ". Waiting for other players...");
-                dataOutputStream.flush();
+                runGameSession(in, out, loggedInUser);
             }
 
-            // FIX: added small wait for non-host players
-            // this gives the host time to finish choosing before we check numberOfPlayers
-            if (myIndex != 0) {
-                try { Thread.sleep(500); } catch (Exception e) {}
+            System.out.println(clientName + " disconnected");
+            connectedPlayers.decrementAndGet();
+
+        } catch (Exception e) {
+            System.out.println((clientName != null ? clientName : "Client") + " disconnected: " + e.getMessage());
+            connectedPlayers.decrementAndGet();
+        } finally {
+            try { if (in  != null) in.close();  } catch (Exception ignored) {}
+            try { if (out != null) out.close(); } catch (Exception ignored) {}
+            try { socket.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    private void runGameSession(DataInputStream in, DataOutputStream out, User loggedInUser) throws Exception {
+        GameOptionsService options = new GameOptionsService(in, out, loggedInUser, 0);
+
+        Game activeGame;
+        while ((activeGame = options.showMenu()) != null) {
+
+            GameLoop activeLoop = options.activeLoop;
+
+            // find this player's index in the game
+            int myIndex = -1;
+            for (int i = 0; i < activeGame.players; i++) {
+                if (clientName.equals(activeGame.names[i])) {
+                    myIndex = i;
+                    break;
+                }
             }
 
-            // ---- check if enough players joined to start ----
-            if (currentGame.numberOfPlayers == minPlayers && !gameStarted) {
+            // read answers until game finishes or player quits
+            while (myIndex >= 0) {
 
-                gameStarted = true;
-
-                currentGame.sendToAll("All players joined");
-
-                 currentGame.sendToAll("start");
-
-                GameLoop loop = new GameLoop(currentGame, questionTime);
-                Thread gameThread = new Thread(loop);
-                gameThread.start();
-            }
-
-             while (true) {
-
-                String message = dataInputStream.readUTF().trim();
-
-                if (message.equals("-")) {
-
-                    dataOutputStream.writeUTF("You left the game");
+                // game finished — break back to menu
+                if (activeLoop != null && activeLoop.gameFinished) {
+                    out.writeUTF("--- Game over! Returning to menu... ---");
+                    out.flush();
                     break;
                 }
 
-                 String answer = message.toUpperCase();
+                // poll for input without blocking
+                if (in.available() == 0) {
+                    try { Thread.sleep(100); } catch (Exception ignored) {}
+                    continue;
+                }
+
+                String message = in.readUTF().trim();
+
+                if (message.equals("-")) {
+                    out.writeUTF("You left the game");
+                    break;
+                }
+
+                String answer = message.toUpperCase();
 
                 if (!answer.equals("A") && !answer.equals("B")
                         && !answer.equals("C") && !answer.equals("D")) {
-
-                    dataOutputStream.writeUTF("Enter A B C or D");
+                    out.writeUTF("Enter A B C or D");
                     continue;
                 }
 
-                if (!currentGame.answerWindowOpen) {
-
-                    dataOutputStream.writeUTF("Wait for the question");
+                if (!activeGame.answerWindowOpen) {
+                    out.writeUTF("Wait for the question");
                     continue;
                 }
 
-                if (currentGame.hasAnswered[myIndex]) {
-
-                    dataOutputStream.writeUTF("You already answered");
+                if (activeGame.hasAnswered[myIndex]) {
+                    out.writeUTF("You already answered");
                     continue;
                 }
 
-
-                currentGame.playerAnswers[myIndex][currentGame.currentQuestionIndex] = answer;
-
-                currentGame.hasAnswered[myIndex] = true;
-
-                dataOutputStream.writeUTF("Answer received");
+                activeGame.playerAnswers[myIndex][activeGame.currentQuestionIndex] = answer;
+                activeGame.hasAnswered[myIndex] = true;
+                out.writeUTF("Answer received");
             }
-
-            System.out.println(clientName + " disconnected");
-
-            dataInputStream.close();
-            dataOutputStream.close();
-            socket.close();
-
-        } catch (Exception e) {
-
-            System.out.println(clientName + " disconnected");
         }
     }
 
-    static void loadConfig() {
+    private User handleAuthentication(DataInputStream in, DataOutputStream out) throws Exception {
+        while (true) {
+            out.writeUTF("Welcome\n1 - Login\n2 - Register\n- - Quit");
+            out.flush();
 
-        try {
+            String choice = in.readUTF().trim();
 
-            File file = new File("src/main/java/com/example/data/config.txt");
-            Scanner scanner = new Scanner(file);
+            if (choice.equals("-")) return null;
 
-            while (scanner.hasNextLine()) {
+            if (choice.equals("1")) {
+                out.writeUTF("Enter username:");
+                out.flush();
+                String username = in.readUTF().trim();
 
-                String line = scanner.nextLine().trim();
-                if (line.isEmpty()) continue;
+                out.writeUTF("Enter password:");
+                out.flush();
+                String password = in.readUTF().trim();
 
-                String[] parts = line.split("=");
-                if (parts.length != 2) continue;
+                String result = AuthService.login(username, password);
 
-                String key   = parts[0].trim();
-                String value = parts[1].trim();
-
-                if (key.equals("minPlayers"))   minPlayers   = Integer.parseInt(value);
-                if (key.equals("maxPlayers"))   maxPlayers   = Integer.parseInt(value);
-                if (key.equals("questionTime")) questionTime = Integer.parseInt(value);
-                if (key.equals("maxQuestions")) maxQuestions = Integer.parseInt(value);
-            }
-
-            scanner.close();
-
-            System.out.println("Config loaded");
-
-        } catch (Exception e) {
-
-            System.out.println("Config file not found");
-        }
-    }
-
-    static void loadQuestions() {
-
-        try {
-
-            File file = new File("src/main/java/com/example/data/questions.txt");
-            Scanner scanner = new Scanner(file);
-
-            while (scanner.hasNextLine()) {
-
-                String line = scanner.nextLine().trim();
-                if (line.isEmpty()) continue;
-
-                String[] parts = line.split("\\|");
-                if (parts.length != 5) continue;
-
-                String text          = parts[0].trim();
-                String category      = parts[1].trim();
-                String level         = parts[2].trim();
-                String choicesString = parts[3].trim();
-                String correctAnswer = parts[4].trim();
-
-                String[] choiceArray = choicesString.split(",");
-
-                ArrayList<String> choices = new ArrayList<>();
-
-                for (String choice : choiceArray) {
-                    choices.add(choice.trim());
+                if (result.equals("200")) {
+                    out.writeUTF("Login successful! Welcome, " + AuthService.getUser(username).getName() + "!");
+                    out.flush();
+                    return AuthService.getUser(username);
+                } else if (result.equals("401")) {
+                    out.writeUTF("ERROR 401: Wrong password. Try again.");
+                    out.flush();
+                } else if (result.equals("404")) {
+                    out.writeUTF("ERROR 404: Username not found. Try again.");
+                    out.flush();
                 }
 
-                Question q = new Question(text, category, level, choices, correctAnswer);
+            } else if (choice.equals("2")) {
+                out.writeUTF("Enter your name:");
+                out.flush();
+                String name = in.readUTF().trim();
 
-                allQuestions.add(q);
+                out.writeUTF("Choose a username:");
+                out.flush();
+                String username = in.readUTF().trim();
+
+                out.writeUTF("Choose a password:");
+                out.flush();
+                String password = in.readUTF().trim();
+
+                String result = AuthService.register(name, username, password);
+
+                if (result.equals("REGISTERED")) {
+                    out.writeUTF("Registered successfully! Please login.");
+                    out.flush();
+                } else {
+                    out.writeUTF("ERROR: Username '" + username + "' is already taken. Try another.");
+                    out.flush();
+                }
+
+            } else {
+                out.writeUTF("Invalid option. Enter 1, 2, or -");
+                out.flush();
             }
-
-            scanner.close();
-
-            System.out.println("Questions loaded: " + allQuestions.size());
-
-        } catch (Exception e) {
-
-            System.out.println("Error loading questions");
         }
     }
 
-    static ArrayList<Question> pickRandomQuestions(int count) {
+    private void handleAdminSession(DataInputStream in, DataOutputStream out) throws Exception {
+        while (true) {
+            out.writeUTF("=== Admin Panel ===\n" +
+                    "1- Total players connected\n" +
+                    "2- Player with most wins\n" +
+                    "3- Total questions played\n" +
+                    "4- Highest score ever recorded\n" +
+                    "-- Logout");
+            out.flush();
 
-        ArrayList<Question> copy = new ArrayList<>(allQuestions);
+            String choice = in.readUTF().trim();
 
-        Collections.shuffle(copy);
-
-        ArrayList<Question> picked = new ArrayList<>();
-
-        for (int i = 0; i < count && i < copy.size(); i++) {
-
-            picked.add(copy.get(i));
+            if (choice.equals("-")) {
+                out.writeUTF("Admin logged out.");
+                out.flush();
+                return;
+            } else if (choice.equals("1")) {
+                out.writeUTF("Total connected players: " + connectedPlayers.get());
+                out.flush();
+            } else if (choice.equals("2")) {
+                out.writeUTF("Player with most wins: " + AuthService.getPlayerWithMostWins());
+                out.flush();
+            } else if (choice.equals("3")) {
+                out.writeUTF("Total questions played: " + AuthService.getTotalQuestionsPlayed());
+                out.flush();
+            } else if (choice.equals("4")) {
+                out.writeUTF("Highest score ever: " + AuthService.getHighestScore());
+                out.flush();
+            } else {
+                out.writeUTF("Invalid option.");
+                out.flush();
+            }
         }
+    }
 
-        return picked;
+    public static ArrayList<Question> pickQuestionsByFilter(String category, String difficulty, int count) {
+        // send request to LookupServer with the filter
+        String cat = category.equalsIgnoreCase("Mixed") ? "null" : category;
+        String diff = difficulty.equalsIgnoreCase("Mixed") ? "null" : difficulty;
+        ArrayList<Question> result = AuthService.fetchQuestionsFromLookup(cat, diff, count);
+        if (result.isEmpty()) {
+            System.out.println("LookupServer returned no questions for " + category + "/" + difficulty);
+        }
+        return result;
     }
 }

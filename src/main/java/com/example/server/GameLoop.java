@@ -1,6 +1,8 @@
 package com.example.server;
 
 import com.example.data.Question;
+import com.example.objects.Game;
+
 import java.io.*;
 import java.util.*;
 
@@ -8,9 +10,9 @@ public class GameLoop implements Runnable {
 
     Game game;
     int questionTime;
+    public volatile boolean gameFinished = false;
 
     public GameLoop(Game game, int questionTime) {
-
         this.game         = game;
         this.questionTime = questionTime;
     }
@@ -40,6 +42,7 @@ public class GameLoop implements Runnable {
             game.answerWindowOpen = true;
 
             int timeLeft = questionTime;
+            StringBuilder timeDisplay = new StringBuilder("TIMER:Remaining:");
 
             while (timeLeft > 0) {
 
@@ -47,8 +50,8 @@ public class GameLoop implements Runnable {
                 timeLeft--;
 
                 if (timeLeft == 10 || timeLeft == 5 || timeLeft == 3 || timeLeft == 1) {
-
-                    game.sendToAll(timeLeft + " seconds left");
+                    timeDisplay.append(" ").append(timeLeft);
+                    game.sendToAll(timeDisplay.toString());
                 }
 
                 if (allPlayersAnswered()) {
@@ -60,6 +63,8 @@ public class GameLoop implements Runnable {
 
             game.answerWindowOpen = false;
 
+            // move cursor to new line after the timer overwrote it
+            game.sendToAll("TIMER_END");
             game.sendToAll("Time is up.");
 
             evaluateAnswers(current, q);
@@ -75,6 +80,7 @@ public class GameLoop implements Runnable {
 
         showFinalResults();
         saveScores();
+        gameFinished = true;
     }
 
     private void evaluateAnswers(Question current, int q) {
@@ -87,7 +93,7 @@ public class GameLoop implements Runnable {
 
             String theirAnswer = game.answers[i][q];
 
-            if (theirAnswer.equals("")) {
+            if (theirAnswer.isEmpty()) {
 
                 game.sendToAll(game.names[i] + " did not answer");
 
@@ -136,7 +142,7 @@ public class GameLoop implements Runnable {
                 String theirAnswer = game.answers[i][q];
 
                 String result;
-                if (theirAnswer.equals("")) {
+                if (theirAnswer.isEmpty()) {
                     result = "no answer";
                 } else if (theirAnswer.equals(current.correctAnswer)) {
                     result = "correct";
@@ -145,7 +151,7 @@ public class GameLoop implements Runnable {
                 }
 
                 game.sendToAll("  Q" + (q + 1) + ": " + current.text);
-                game.sendToAll("  Your answer: " + (theirAnswer.equals("") ? "none" : theirAnswer)
+                game.sendToAll("  Your answer: " + (theirAnswer.isEmpty() ? "none" : theirAnswer)
                         + " | Correct: " + current.correctAnswer
                         + " | " + result);
             }

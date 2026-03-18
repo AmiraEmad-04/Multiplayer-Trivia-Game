@@ -1,15 +1,25 @@
 package com.example.objects;
 
+import java.io.DataOutputStream;
 import java.util.ArrayList;
 
-class Room {
+public class Room {
+    private final String roomName;
+    private final String category;
+    private final String difficulty;
+    private final int numQuestions;
+    private final int maxPlayers;
+    private final ArrayList<User> players;
+    private boolean gameStarted;
 
-    private String roomName;
-    private ArrayList<User> players;
-
-    public Room(String roomName) {
+    public Room(String roomName, String category, String difficulty, int numQuestions, int maxPlayers) {
         this.roomName = roomName;
-        players = new ArrayList<>();
+        this.category = category;
+        this.difficulty = difficulty;
+        this.numQuestions = numQuestions;
+        this.maxPlayers = maxPlayers;
+        this.players = new ArrayList<>();
+        this.gameStarted = false;
     }
 
     public void addPlayer(User user) {
@@ -24,12 +34,35 @@ class Room {
         return roomName;
     }
 
-    public void showPlayers() {
+    public boolean isFull() {
+        return players.size() >= maxPlayers;
+    }
 
-        System.out.println("Room: " + roomName);
+    public int getMaxPlayers() {
+        return maxPlayers;
+    }
 
-        for (User u : players) {
-            System.out.println(" - " + u.getUsername());
-        }
+    public String getCategory() {
+        return category;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public int getNumQuestions() {
+        return numQuestions;
+    }
+
+    public boolean isGameStarted() {
+        return gameStarted;
+    }
+
+    public ArrayList<User> getPlayers() {
+        return players;
+    }
+
+    public void setGameStarted(boolean gameStarted) {
+        this.gameStarted = gameStarted;
     }
 }

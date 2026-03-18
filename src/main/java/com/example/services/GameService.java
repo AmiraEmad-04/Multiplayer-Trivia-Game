@@ -1,4 +1,4 @@
-package com.example.server;
+package com.example.services;
 
 import java.util.ArrayList;
 import java.util.List;

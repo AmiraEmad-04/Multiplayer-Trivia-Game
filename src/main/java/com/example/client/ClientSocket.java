@@ -10,89 +10,67 @@ public class ClientSocket {
     public static void main(String[] args) {
 
         try {
-
             Socket socket = new Socket("127.0.0.1", 6660);
-
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            DataInputStream  dataInputStream  = new DataInputStream(socket.getInputStream());
-
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            DataInputStream  in  = new DataInputStream(socket.getInputStream());
             Scanner scanner = new Scanner(System.in);
+            boolean authenticated = false;
+            while (!authenticated) {
+                String msg = in.readUTF();
+                System.out.println(msg);
 
-            String serverQuestion = dataInputStream.readUTF();
-            System.out.println(serverQuestion);
+                if (msg.startsWith("Goodbye")) { socket.close(); return; }
+                if (msg.startsWith("Login successful")) { authenticated = true; break; }
 
-            String clientName = scanner.nextLine();
-            dataOutputStream.writeUTF(clientName);
-            dataOutputStream.flush();
-
-
-            boolean setupDone = false;
-
-            while (!setupDone) {
-
-                String serverMsg = dataInputStream.readUTF();
-
-
-                if (serverMsg.equals("start")) {
-                    setupDone = true;
-                    break;
+                if (msg.startsWith("ERROR") ||
+                        msg.startsWith("Registered successfully") ||
+                        msg.startsWith("Invalid option")) {
+                    continue;
                 }
 
-
-                System.out.println(serverMsg);
-
-
-                if (serverMsg.contains("1 - Single") || serverMsg.contains("Number of players")) {
-
-                    String input = scanner.nextLine();
-                    dataOutputStream.writeUTF(input);
-                    dataOutputStream.flush();
-                }
+                String input = scanner.nextLine().trim();
+                out.writeUTF(input);
+                out.flush();
+                if (input.equals("-")) { socket.close(); return; }
             }
 
-            System.out.println("Game starting. Use A B C D to answer.");
-
-
-            Thread readerThread = new Thread(() -> {
-
+            Thread reader = new Thread(() -> {
                 try {
-
                     while (true) {
-
-                        String msg = dataInputStream.readUTF();
-                        System.out.println(msg);
+                        String msg = in.readUTF();
+                        // TIMER_END: move to new line so answer input is not overwritten
+                        if (msg.equals("TIMER_END")) {
+                            System.out.println();
+                            continue;
+                        }
+                        // TIMER messages overwrite the same line
+                        if (msg.startsWith("TIMER:")) {
+                            System.out.print("\r" + msg.substring(6) + "   ");
+                        } else {
+                            System.out.println(msg);
+                        }
                     }
-
                 } catch (Exception e) {
-
-                    System.out.println("Server closed");
+                    System.out.println("Server closed.");
                 }
             });
-
-            readerThread.start();
-
+            reader.setDaemon(true);
+            reader.start();
 
             while (true) {
-
-                String input = scanner.nextLine();
-
-                dataOutputStream.writeUTF(input);
-                dataOutputStream.flush();
-
-
-                if (input.equals("-")) {
-                    break;
-                }
+                String input = scanner.nextLine().trim();
+                out.writeUTF(input);
+                out.flush();
+                if (input.equals("-")) break;
             }
 
             scanner.close();
-            dataOutputStream.close();
-            dataInputStream.close();
+            out.close();
+            in.close();
             socket.close();
 
         } catch (Exception e) {
-
-            System.out.println("Connection error");
+            System.out.println("Connection error: " + e.getMessage());
         }
     }
 }

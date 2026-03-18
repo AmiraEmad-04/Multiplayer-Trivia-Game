@@ -1,4 +1,4 @@
-package com.example.server;
+package com.example.objects;
 
 import com.example.data.Question;
 import java.io.DataOutputStream;
@@ -6,24 +6,22 @@ import java.util.ArrayList;
 
 public class Game {
 
-    String[] names;
-    int[] scores;
+    public boolean answerWindowOpen;
+    public int currentQuestionIndex;
+    public String[] names;
+    public int[] scores;
     DataOutputStream[] streams;
 
-    boolean[] answered;
-    boolean[] hasAnswered;
+    public boolean[] answered;
+    public boolean[] hasAnswered;
 
-    String[][] answers;
-    String[][] playerAnswers;
+    public String[][] answers;
+    public String[][] playerAnswers;
 
-    ArrayList<Question> qs;
+    public ArrayList<Question> qs;
 
-    boolean answerWindowOpen = false;
-
-    int currentQuestionIndex = 0;
-
-    int players = 0;
-    int numberOfPlayers = 0;
+    public int players = 0;
+    public int numberOfPlayers = 0;
 
     public Game(ArrayList<Question> qs, int maxPlayers) {
 
@@ -76,26 +74,15 @@ public class Game {
         }
     }
 
-    public void sendToOne(int playerIndex, String message) {
-
-        try {
-
-            streams[playerIndex].writeUTF(message);
-            streams[playerIndex].flush();
-
-        } catch (Exception e) {
-
-            System.out.println(names[playerIndex] + " disconnected");
-        }
-    }
-
     public int getPoints(String level) {
 
-        if (level.equals("Easy"))   return 10;
-        if (level.equals("Medium")) return 20;
-        if (level.equals("Hard"))   return 30;
+        return switch (level) {
+            case "Easy" -> 10;
+            case "Medium" -> 20;
+            case "Hard" -> 30;
+            default -> 0;
+        };
 
-        return 0;
     }
 
     public void resetAnswersForNewQuestion() {
